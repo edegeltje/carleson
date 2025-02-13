@@ -581,6 +581,17 @@ lemma stackSize_le_one_of_pairwiseDisjoint {C : Set (𝔓 X)} {x : X}
       exact hx _ hp
     linarith
 
+lemma eq_empty_of_forall_stackSize_zero (s : Set (𝔓 X)) :
+  (∀ x, stackSize s x = 0) → s = ∅ := by
+  intro h
+  dsimp [stackSize] at h
+  simp only [Finset.sum_eq_zero_iff, Finset.mem_filter, Finset.mem_univ, true_and,
+    indicator_apply_eq_zero, Pi.one_apply, one_ne_zero, imp_false] at h
+  ext 𝔲
+  simp only [mem_empty_iff_false, iff_false]
+  obtain ⟨x,hx⟩ := (𝓘 𝔲).nonempty
+  exact fun h𝔲 => h x 𝔲 h𝔲 hx
+
 /-! ### Decomposing a set of tiles into disjoint subfamilies -/
 
 /-- Given any family of tiles, one can extract a maximal disjoint subfamily, covering everything. -/

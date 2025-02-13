@@ -1,5 +1,6 @@
 import Carleson.ForestOperator.LargeSeparation
 import Carleson.ForestOperator.RemainingTiles
+import Carleson.ToMathlib.Data.Fintype.Order
 import Carleson.ToMathlib.MeasureTheory.Integral.SetIntegral
 import Carleson.ToMathlib.Order.Chain
 
@@ -98,7 +99,7 @@ lemma rowDecomp_𝔘_pairwiseDisjoint (t : Forest X n) (j : ℕ) :
   rw [mem_rowDecomp_zornset_iff] at this
   exact this.right.left
 
--- seems unused.
+-- nearly unused;
 lemma mem_rowDecomp_𝔘_maximal (t : Forest X n) (j : ℕ) :
     ∀ x ∈ (t.rowDecomp_𝔘 j), Maximal (· ∈ (fun x => 𝓘 x : 𝔓 X → Set X) '' (t \ ⋃ i < j, rowDecomp_𝔘 t i)) (𝓘 x : Set X) := by
   have := rowDecomp_𝔘_mem_zornset t j
@@ -112,14 +113,7 @@ lemma rowDecomp_𝔘_maximal (t : Forest X n) (j : ℕ) :
   fun _ => (rowDecomp_𝔘_def t j).le_of_ge
 
 lemma rowDecomp_𝔘_subset_tree (t : Forest X n) (j : ℕ) :
-  rowDecomp_𝔘 t j ⊆ t := fun x hx => ((mem_diff x).mp (rowDecomp_𝔘_subset t j hx)).left
-
-lemma rowDecomp_𝔘_stackSize_le' (t : Forest X n) (j : ℕ) :
-    ∀ {x}, stackSize (rowDecomp_𝔘 t j) x ≤ 2 ^ n := by
-  intro x
-  trans
-  · exact stackSize_mono (rowDecomp_𝔘_subset_tree t j)
-  · exact t.stackSize_le'
+  rowDecomp_𝔘 t j ⊆ t := subset_trans (rowDecomp_𝔘_subset t j) diff_subset
 
 /-- The row-decomposition of a tree, defined in the proof of Lemma 7.7.1.
 The indexing is off-by-one compared to the blueprint. -/
@@ -130,7 +124,9 @@ def rowDecomp (t : Forest X n) (j : ℕ) : Row X n where
   ordConnected' hu:= t.ordConnected' (rowDecomp_𝔘_subset_tree t j hu)
   𝓘_ne_𝓘' hu := t.𝓘_ne_𝓘' (rowDecomp_𝔘_subset_tree t j hu)
   smul_four_le' hu := t.smul_four_le' (rowDecomp_𝔘_subset_tree t j hu)
-  stackSize_le' := rowDecomp_𝔘_stackSize_le' t j
+  stackSize_le' := le_trans
+    (stackSize_mono (rowDecomp_𝔘_subset_tree t j))
+    t.stackSize_le'
   dens₁_𝔗_le' hu := t.dens₁_𝔗_le' (rowDecomp_𝔘_subset_tree t j hu)
   lt_dist' hu hu' := t.lt_dist' (rowDecomp_𝔘_subset_tree t j hu) (rowDecomp_𝔘_subset_tree t j hu')
   ball_subset' hu := t.ball_subset' (rowDecomp_𝔘_subset_tree t j hu)
@@ -138,14 +134,6 @@ def rowDecomp (t : Forest X n) (j : ℕ) : Row X n where
 
 lemma rowDecomp_𝔘_eq (t : Forest X n) (j : ℕ) :
   (t.rowDecomp j).𝔘 = rowDecomp_𝔘 t j := rfl
-
--- for mathlib, maybe? if so, maybe we should also add the `Finite` and `Finset` versions?
--- for reference, loogle for 'Maximal, "exists_le_maximal"'
-lemma Set.Finite.exists_maximal_and_mem {α : Type*} {s : Set (Set α)} (hs : s.Finite)
-    {b : Set α} (hb : b ∈ s) {x : α} (hx : x ∈ b) : ∃ m, Maximal (· ∈ s) m ∧ x ∈ m :=
-  (hs.inter_of_left _ |>.exists_le_maximal (s := s ∩ {y' | x ∈ y'}) ⟨hb,hx⟩).imp
-    fun _ ⟨_,hm⟩ =>
-      ⟨⟨hm.prop.left,fun _ hm' hle => hm.le_of_ge ⟨hm',hle hm.prop.right⟩ hle⟩,hm.prop.right⟩
 
 lemma stackSize_remainder_ge_one_of_exists (t : Forest X n) (j : ℕ) (x:X)
     (this : ∃ 𝔲' ∈ (t.rowDecomp j).𝔘, x ∈ (𝓘 𝔲' : Set _)) :
@@ -167,11 +155,11 @@ lemma remainder_stackSize_le (t : Forest X n) (j : ℕ) :
       exact t.stackSize_le'
     | succ j hinduct =>
       if h: ∃ 𝔲 ∈ (t \ ⋃ i < j + 1, t.rowDecomp i : Set _), x ∈ 𝓘 𝔲 then
-        have : ∃ s, Maximal (· ∈ ((𝓘 · : 𝔓 X → Set X) '' (t \ ⋃ i < j, t.rowDecomp i : Set _))) s ∧ x ∈ (s:Set X) := by
+        have : ∃ s, Maximal (· ∈ ((𝓘 · : 𝔓 X → Set X) '' (t \ ⋃ i < j, t.rowDecomp i : Set _))) s
+            ∧ x ∈ (s:Set X) := by
           obtain ⟨𝔲,h𝔲⟩ := h
           rw [biUnion_lt_succ,← diff_diff,mem_diff] at h𝔲
-          apply Set.Finite.exists_maximal_and_mem (Set.Finite.image _ (toFinite _))
-            ⟨𝔲,h𝔲.left.left,rfl⟩ h𝔲.right
+          exact ((toFinite _).image _).exists_maximal_and_mem ⟨𝔲,h𝔲.left.left,rfl⟩ h𝔲.right
         obtain ⟨𝔲,h𝔲⟩ := h
         simp only [biUnion_lt_succ, ← diff_diff] at h𝔲 ⊢
         rw [stackSize_sdiff_eq,← Nat.sub_sub]
@@ -194,10 +182,10 @@ lemma remainder_stackSize_le (t : Forest X n) (j : ℕ) :
         constructor
         · rw [pairwiseDisjoint_insert]
           use t.rowDecomp_𝔘_pairwiseDisjoint j
-          intro k hk hne
+          intro k
+          revert k
           sorry
-        refine ⟨?_, mem_rowDecomp_𝔘_maximal t j⟩
-        exact hmax
+        · exact ⟨hmax, mem_rowDecomp_𝔘_maximal t j⟩
       else
         dsimp [stackSize]
         push_neg at h
@@ -208,18 +196,6 @@ lemma remainder_stackSize_le (t : Forest X n) (j : ℕ) :
         rw [Finset.sum_eq_zero (fun _ _ => rfl)]
         exact zero_le _
 
-lemma empty_of_forall_stackSize_zero (s : Set (𝔓 X)) :
-  (∀ x, stackSize s x = 0) → s = ∅ := by
-  intro h
-  dsimp [stackSize] at h
-  simp only [Finset.sum_eq_zero_iff, Finset.mem_filter, Finset.mem_univ, true_and,
-    indicator_apply_eq_zero, Pi.one_apply, one_ne_zero, imp_false] at h
-  ext 𝔲
-  simp only [mem_empty_iff_false, iff_false]
-  obtain ⟨x,hx⟩ := (𝓘 𝔲).nonempty
-  exact fun h𝔲 => h x 𝔲 h𝔲 hx
-
-
 /-- Part of Lemma 7.7.1 -/
 @[simp]
 lemma biUnion_rowDecomp : ⋃ j < 2 ^ n, t.rowDecomp j = (t : Set (𝔓 X)) := by
@@ -227,9 +203,8 @@ lemma biUnion_rowDecomp : ⋃ j < 2 ^ n, t.rowDecomp j = (t : Set (𝔓 X)) := b
   · simp_rw [iUnion_subset_iff,rowDecomp_𝔘_eq]
     exact fun i _ => rowDecomp_𝔘_subset_tree t i
   · rw [← diff_eq_empty]
-    apply empty_of_forall_stackSize_zero
-    intro x
-    apply Nat.eq_zero_of_le_zero ((Nat.sub_self _).symm ▸ remainder_stackSize_le t (2 ^ n) x)
+    exact eq_empty_of_forall_stackSize_zero _ fun x =>
+      Nat.eq_zero_of_le_zero ((Nat.sub_self _).symm ▸ remainder_stackSize_le t (2 ^ n) x)
 
 /-- Part of Lemma 7.7.1 -/
 lemma pairwiseDisjoint_rowDecomp :
