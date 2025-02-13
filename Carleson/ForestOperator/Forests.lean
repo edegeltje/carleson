@@ -51,20 +51,20 @@ lemma correlation_separated_trees (hu₁ : u₁ ∈ t) (hu₂ : u₂ ∈ t) (hu 
 
 /-! ## Section 7.7 -/
 
-def rowDecomp_zornset (t : Forest X n) (s : Set (𝔓 X)) :=
-  { x : Set (𝔓 X) | x ⊆ s} ∩ {x : Set (𝔓 X) | x.PairwiseDisjoint t} ∩
-    {x : Set (𝔓 X) | x ⊆ {u | Maximal (· ∈ ((fun x => 𝓘 x : 𝔓 X → Set X) '' s)) (𝓘 u : Set X)}}
+def rowDecomp_zornset (s : Set (𝔓 X)) :=
+  { x : Set (𝔓 X) | x ⊆ s} ∩ {x : Set (𝔓 X) | x.PairwiseDisjoint (𝓘 ·: _ → Set X)} ∩
+    {x : Set (𝔓 X) | x ⊆ {u | Maximal (· ∈ 𝓘 '' s) (𝓘 u)}}
 
-lemma mem_rowDecomp_zornset_iff (t : Forest X n) (s s' : Set (𝔓 X)) :
-    s' ∈ rowDecomp_zornset t s ↔ (s' ⊆ s ∧ s'.PairwiseDisjoint t ∧
-      ∀ u ∈ s', Maximal (· ∈ (fun x => 𝓘 x : 𝔓 X → Set X) '' s) (𝓘 u : Set X)) := by
+lemma mem_rowDecomp_zornset_iff (s s' : Set (𝔓 X)) :
+    s' ∈ rowDecomp_zornset s ↔ (s' ⊆ s ∧ s'.PairwiseDisjoint (𝓘 ·: _ → Set X) ∧
+      ∀ u ∈ s', Maximal (· ∈ 𝓘 '' s) (𝓘 u)) := by
   rw [rowDecomp_zornset,mem_inter_iff,mem_inter_iff,mem_setOf,mem_setOf,mem_setOf,and_assoc]
   nth_rw 2 [subset_def]
   simp_rw [mem_setOf]
 
-lemma rowDecomp_zornset_chain_Union_bound (s' : Set (𝔓 X)) {c : Set (Set (𝔓 X))} (hc : c ⊆ t.rowDecomp_zornset s')
+lemma rowDecomp_zornset_chain_Union_bound (s' : Set (𝔓 X)) {c : Set (Set (𝔓 X))} (hc : c ⊆ rowDecomp_zornset s')
     (hc_chain : IsChain (· ⊆ ·) c) :
-    (⋃ s ∈ c,s) ∈ t.rowDecomp_zornset s' ∧ ∀ s ∈ c, s ⊆ ⋃ s'' ∈ c, s'' := by
+    (⋃ s ∈ c,s) ∈ rowDecomp_zornset s' ∧ ∀ s ∈ c, s ⊆ ⋃ s'' ∈ c, s'' := by
   simp_rw [rowDecomp_zornset,subset_inter_iff] at hc ⊢
   obtain ⟨⟨hc₁,hc₂⟩,hc₃⟩ := hc
   simp_rw [mem_inter_iff,mem_setOf]
@@ -75,16 +75,16 @@ lemma rowDecomp_zornset_chain_Union_bound (s' : Set (𝔓 X)) {c : Set (Set (�
   · exact fun s a_1 ↦ subset_iUnion₂_of_subset s a_1 fun ⦃a_2⦄ a ↦ a
 
 def rowDecomp_𝔘 (t : Forest X n) (j : ℕ) : Set (𝔓 X) :=
-  (zorn_subset (rowDecomp_zornset t (t \ ⋃ i < j, rowDecomp_𝔘 t i))
+  (zorn_subset (rowDecomp_zornset (t \ ⋃ i < j, rowDecomp_𝔘 t i))
   (fun _ hc => Exists.intro _ ∘ rowDecomp_zornset_chain_Union_bound _ hc)).choose
 
 lemma rowDecomp_𝔘_def (t : Forest X n) (j : ℕ) :
-    Maximal (fun x ↦ x ∈ rowDecomp_zornset t (t \ ⋃ i < j, rowDecomp_𝔘 t i)) (rowDecomp_𝔘 t j) := by
+    Maximal (fun x ↦ x ∈ rowDecomp_zornset (t \ ⋃ i < j, rowDecomp_𝔘 t i)) (rowDecomp_𝔘 t j) := by
   rw [rowDecomp_𝔘]
   apply Exists.choose_spec
 
 lemma rowDecomp_𝔘_mem_zornset (t : Forest X n) (j : ℕ) :
-    t.rowDecomp_𝔘 j ∈ rowDecomp_zornset t (t \ ⋃ i < j, rowDecomp_𝔘 t i) :=
+    t.rowDecomp_𝔘 j ∈ rowDecomp_zornset (t \ ⋃ i < j, rowDecomp_𝔘 t i) :=
   (rowDecomp_𝔘_def t j).prop
 
 lemma rowDecomp_𝔘_subset (t : Forest X n) (j : ℕ) :
@@ -94,21 +94,21 @@ lemma rowDecomp_𝔘_subset (t : Forest X n) (j : ℕ) :
   exact this.left
 
 lemma rowDecomp_𝔘_pairwiseDisjoint (t : Forest X n) (j : ℕ) :
-    (t.rowDecomp_𝔘 j).PairwiseDisjoint t := by
+    (t.rowDecomp_𝔘 j).PairwiseDisjoint (𝓘 ·: _ → Set X) := by
   have := rowDecomp_𝔘_mem_zornset t j
   rw [mem_rowDecomp_zornset_iff] at this
   exact this.right.left
 
 -- nearly unused;
 lemma mem_rowDecomp_𝔘_maximal (t : Forest X n) (j : ℕ) :
-    ∀ x ∈ (t.rowDecomp_𝔘 j), Maximal (· ∈ (fun x => 𝓘 x : 𝔓 X → Set X) '' (t \ ⋃ i < j, rowDecomp_𝔘 t i)) (𝓘 x : Set X) := by
+    ∀ x ∈ (t.rowDecomp_𝔘 j), Maximal (· ∈ 𝓘 '' (t \ ⋃ i < j, rowDecomp_𝔘 t i)) (𝓘 x) := by
   have := rowDecomp_𝔘_mem_zornset t j
   rw [mem_rowDecomp_zornset_iff] at this
   exact this.right.right
 
 -- maybe not important? not used, instead `mem_of_prop_insert` is used
 lemma rowDecomp_𝔘_maximal (t : Forest X n) (j : ℕ) :
-    ∀ s ∈ rowDecomp_zornset t (t \ ⋃ i < j, rowDecomp_𝔘 t i),
+    ∀ s ∈ rowDecomp_zornset (t \ ⋃ i < j, rowDecomp_𝔘 t i),
     rowDecomp_𝔘 t j ⊆ s → s ⊆ rowDecomp_𝔘 t j :=
   fun _ => (rowDecomp_𝔘_def t j).le_of_ge
 
@@ -136,12 +136,12 @@ lemma rowDecomp_𝔘_eq (t : Forest X n) (j : ℕ) :
   (t.rowDecomp j).𝔘 = rowDecomp_𝔘 t j := rfl
 
 lemma stackSize_remainder_ge_one_of_exists (t : Forest X n) (j : ℕ) (x:X)
-    (this : ∃ 𝔲' ∈ (t.rowDecomp j).𝔘, x ∈ (𝓘 𝔲' : Set _)) :
+    (this : ∃ 𝔲' ∈ (t.rowDecomp j).𝔘, x ∈ 𝓘 𝔲') :
     1 ≤ stackSize ((t \ ⋃ i < j, t.rowDecomp i) ∩ t.rowDecomp j: Set _) x := by
   obtain ⟨𝔲',h𝔲'⟩ := this
   dsimp [stackSize]
   rw [← Finset.sum_erase_add _ (a := 𝔲')]
-  · rw [indicator_apply,if_pos h𝔲'.right,Pi.one_apply]
+  · rw [indicator_apply,← Grid.mem_def,if_pos h𝔲'.right,Pi.one_apply]
     simp only [le_add_iff_nonneg_left, zero_le]
   simp only [mem_inter_iff, Finset.mem_filter, Finset.mem_univ, true_and]
   exact ⟨t.rowDecomp_𝔘_subset j h𝔲'.left,h𝔲'.left⟩
@@ -155,11 +155,11 @@ lemma remainder_stackSize_le (t : Forest X n) (j : ℕ) :
       exact t.stackSize_le'
     | succ j hinduct =>
       if h: ∃ 𝔲 ∈ (t \ ⋃ i < j + 1, t.rowDecomp i : Set _), x ∈ 𝓘 𝔲 then
-        have : ∃ s, Maximal (· ∈ ((𝓘 · : 𝔓 X → Set X) '' (t \ ⋃ i < j, t.rowDecomp i : Set _))) s
-            ∧ x ∈ (s:Set X) := by
+        have : ∃ s, Maximal (· ∈ (𝓘 '' (t \ ⋃ i < j, t.rowDecomp i : Set _))) s ∧ x ∈ s := by
           obtain ⟨𝔲,h𝔲⟩ := h
           rw [biUnion_lt_succ,← diff_diff,mem_diff] at h𝔲
-          exact ((toFinite _).image _).exists_maximal_and_mem ⟨𝔲,h𝔲.left.left,rfl⟩ h𝔲.right
+          exact (((toFinite _).image 𝓘).exists_le_maximal ⟨𝔲,h𝔲.left.left,rfl⟩).imp
+            fun _ hz => ⟨hz.right, Grid.mem_mono hz.left h𝔲.right⟩
         obtain ⟨𝔲,h𝔲⟩ := h
         simp only [biUnion_lt_succ, ← diff_diff] at h𝔲 ⊢
         rw [stackSize_sdiff_eq,← Nat.sub_sub]
@@ -172,7 +172,7 @@ lemma remainder_stackSize_le (t : Forest X n) (j : ℕ) :
         rw [mem_𝔘]
         refine ⟨?_,hz⟩
         apply (t.rowDecomp_𝔘_def j).mem_of_prop_insert
-        rw [mem_rowDecomp_zornset_iff t]
+        rw [mem_rowDecomp_zornset_iff]
         simp only [mem_insert_iff, mem_diff,
           mem_𝔘, mem_iUnion, not_and, forall_eq_or_imp]
         constructor
@@ -182,8 +182,18 @@ lemma remainder_stackSize_le (t : Forest X n) (j : ℕ) :
         constructor
         · rw [pairwiseDisjoint_insert]
           use t.rowDecomp_𝔘_pairwiseDisjoint j
-          intro k
-          revert k
+          intro k hk hne
+          suffices 𝓘 u = 𝓘 k → u = k by
+            obtain (h|h|h) := le_or_ge_or_disjoint (i := 𝓘 u) (j := 𝓘 k)
+            case inr.inr => exact h
+            · have heq : 𝓘 u = 𝓘 k := by
+                apply le_antisymm h
+                exact hmax.le_of_ge ⟨k,rowDecomp_𝔘_subset t j hk,rfl⟩ h
+              exact (hne (this heq)).elim
+            · have heq : 𝓘 u = 𝓘 k := by
+                apply le_antisymm _ h
+                exact (mem_rowDecomp_𝔘_maximal t j k hk).le_of_ge ⟨u,hu,rfl⟩ h
+              exact (hne (this heq)).elim
           sorry
         · exact ⟨hmax, mem_rowDecomp_𝔘_maximal t j⟩
       else

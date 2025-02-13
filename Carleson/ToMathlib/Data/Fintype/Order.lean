@@ -1,5 +1,7 @@
 import Mathlib.Data.Fintype.Order
 
+-- these aren't actually used anymore in carleson, but they still might be good to have in mathlib
+
 -- uses [Finite (Set α)] in order to skip having to import `Finite.instSet`
 lemma Finite.exists_maximal_and_mem {α : Type*} [Finite (Set α)] {p : (Set α) → Prop}
     {b : Set α} (hb : p b) {x : α} (hx : x ∈ b) : ∃ m, Maximal (p ·) m ∧ x ∈ m :=
