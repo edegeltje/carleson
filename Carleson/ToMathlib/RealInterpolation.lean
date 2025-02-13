@@ -1680,8 +1680,8 @@ lemma estimate_eLpNorm_trunc_compl {p q : ℝ≥0∞} [MeasurableSpace E₁] [No
       · apply ae_of_all
         intro x (hx : a < ‖f x‖)
         rw [mul_comm]
-        have : ofNNReal ‖f x‖₊ = ENNReal.ofReal ‖f x‖ := (ofReal_norm_eq_coe_nnnorm (f x)).symm
-        rw [this, ENNReal.ofReal_rpow_of_nonneg, ENNReal.ofReal_rpow_of_nonneg]
+        rw [← enorm_eq_nnnorm, ← ofReal_norm_eq_enorm (f x), ENNReal.ofReal_rpow_of_nonneg,
+          ENNReal.ofReal_rpow_of_nonneg]
           <;> try positivity
         exact rpow_le_rpow_of_exponent_le_base_ge ha hx.le (toReal_mono hp hpq.2.le)
     _ ≤ ENNReal.ofReal (a ^ (q.toReal - p.toReal)) * ∫⁻ x : α,
@@ -1736,7 +1736,7 @@ lemma estimate_eLpNorm_trunc {p q : ℝ≥0∞}
         · apply ae_of_all
           intro x hx
           rw [mul_comm]
-          rw [(ofReal_norm_eq_coe_nnnorm (f x)).symm, ENNReal.ofReal_rpow_of_nonneg,
+          rw [← enorm_eq_nnnorm, ← ofReal_norm_eq_enorm (f x), ENNReal.ofReal_rpow_of_nonneg,
             ENNReal.ofReal_rpow_of_nonneg] <;> try positivity
           apply rpow_le_rpow_of_exponent_le_base_le hx.1 hx.2
           exact toReal_mono hq hpq.2.le
@@ -1828,10 +1828,7 @@ lemma res'comp (j : Bool) (β : ℝ) (hβ : β > 0) :
   · rw [h₀] at h₁; simp at h₁
   · ext x
     simp only [mem_diff, mem_Ioi, mem_Ioc, not_and, not_le]
-    constructor
-    · tauto
-    · intro h
-      exact ⟨lt_trans hβ h, fun _ ↦ h⟩
+    refine ⟨by tauto, fun h ↦ ⟨lt_trans hβ h, fun _ ↦ h⟩⟩
   · ext x
     simp only [Ioi_diff_Ici, mem_Ioo]
   · have : j = false := eq_false_of_ne_true h₀
@@ -1854,8 +1851,8 @@ lemma lintegral_trunc_mul₀ {g : ℝ → ℝ≥0∞} {j : Bool} {x : α} {tc : 
     ∫⁻ s : ℝ in res' (xor j tc.mon) (tc.inv ‖f x‖), (g s) * ‖trnc j f (tc.ton s) x‖₊ ^ p := by
   rw [lintegral_double_restrict_set (B := res' (xor j tc.mon) (tc.inv ‖f x‖))
       measurableSet_Ioi measurableSet_res']
-  · have : Ioi 0 ∩ res' (xor j tc.mon) (tc.inv ‖f x‖) = res' (xor j tc.mon) (tc.inv ‖f x‖) := by
-      refine inter_eq_self_of_subset_right (res'subset_Ioi (tc.ran_inv (‖f x‖) hfx))
+  · have : Ioi 0 ∩ res' (xor j tc.mon) (tc.inv ‖f x‖) = res' (xor j tc.mon) (tc.inv ‖f x‖) :=
+      inter_eq_self_of_subset_right (res'subset_Ioi (tc.ran_inv (‖f x‖) hfx))
     rw [this]
   · apply ae_of_all
     rw [res'comp]
@@ -1998,8 +1995,7 @@ lemma value_lintegral_res₀ {j : Bool} {β γ : ℝ} {tc : ToneCouple} (hβ : �
   · rw [h]
     simp only [↓reduceIte]
     rw [lintegral_rpow_of_gt_abs hβ hγ]
-  · have : xor j tc.mon = false := by
-      contrapose! h; exact eq_true_of_ne_false h
+  · have : xor j tc.mon = false := ((fun {a b} ↦ Bool.not_not_eq.mp) fun a ↦ h a.symm).symm
     rw [this]
     simp only [Bool.false_eq_true, ↓reduceIte]
     rw [lintegral_Ioi_rpow_of_lt_abs hβ hγ]
@@ -2054,9 +2050,9 @@ lemma trunc_cut_mono {μ : Measure α} [SigmaFinite μ] {f : α → ℝ≥0∞} 
     ∀ x : α, Monotone (fun n ↦ trunc_cut f μ n x) := by
   intro x m n hmn; simp only [trunc_cut, indicator]
   split_ifs with is_fx_le_m is_fx_le_n
-  · refine min_le_min_left (f x) (Nat.cast_le.mpr hmn)
+  · exact min_le_min_left (f x) (Nat.cast_le.mpr hmn)
   · contrapose! is_fx_le_n
-    apply monotone_spanningSets _ hmn is_fx_le_m
+    exact monotone_spanningSets _ hmn is_fx_le_m
   · exact zero_le _
   · exact zero_le _
 
@@ -2707,18 +2703,18 @@ lemma estimate_trnc₁ {spf : ScaledPowerFunction} {j : Bool}
     ext x
     rw [← ofReal_rpow_of_nonneg] <;> try positivity
     congr
-    exact ofReal_norm_eq_coe_nnnorm (f x)
+    exact ofReal_norm_eq_enorm (f x)
   _ = ENNReal.ofReal (spf.d ^ (q.toReal - (sel j q₀ q₁).toReal)) *
       ENNReal.ofReal |q.toReal - (sel j q₀ q₁).toReal|⁻¹ *
       ((eLpNorm f p μ) ^ p.toReal) ^
       ((sel j p₀ p₁).toReal ⁻¹ * (sel j q₀ q₁).toReal) := by
     congr
     rw [← one_div]
-    refine (eLpNorm_eq_lintegral_rpow_nnnorm ?_ ?_).symm
+    refine (eLpNorm_eq_lintegral_rpow_enorm (ε := E₁) ?_ ?_).symm
     · exact (interpolated_pos' hp₀ hp₁ hp).ne'
     · exact interp_exp_ne_top hp₀p₁.ne ht hp
 
--- TODO: move this to Weaktype.lean?
+-- TODO: move this to WeakType.lean?
 lemma wnorm_eq_zero_iff {f : α → E₁} {p : ℝ≥0∞} [NormedAddCommGroup E₁] (hp : p ≠ 0) :
     wnorm f p μ = 0 ↔ f =ᵐ[μ] 0 := by
   unfold wnorm
@@ -3578,7 +3574,7 @@ lemma support_sigma_finite_from_Memℒp
     unfold eLpNorm eLpNorm' at obs
     split_ifs at obs
     · contradiction
-    · exact lintegral_rpow_nnnorm_lt_top_of_eLpNorm'_lt_top (toReal_pos hp' hp) obs
+    · exact lintegral_rpow_enorm_lt_top_of_eLpNorm'_lt_top (toReal_pos hp' hp) obs
 
 -- lemma support_sfinite_from_Memℒp
 --     [MeasurableSpace E₁] [NormedAddCommGroup E₁] [BorelSpace E₁] (hf : Memℒp f p μ)
