@@ -72,6 +72,7 @@ lemma ball_subset_of_mem_𝓘 (hu : u ∈ t) {p : 𝔓 X} (hp : p ∈ t u) {x : 
   refine (ball_subset_ball' ?_).trans (t.ball_subset hu hp)
   linarith [show dist x (𝔠 p) < 4 * D ^ (𝔰 p) from Grid_subset_ball hx]
 
+-- rename to `𝓘_subset_𝓘_of_descendant`? (mathlib naming convention)
 lemma if_descendant_then_subset (hu : u ∈ t) (hp : p ∈ t u) : (𝓘 p : Set X) ⊆ 𝓘 u := by
   calc ↑(𝓘 p)
     _ ⊆ ball (𝔠 p) (4 * ↑D ^ 𝔰 p) := by

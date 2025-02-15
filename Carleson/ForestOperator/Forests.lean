@@ -112,7 +112,7 @@ lemma rowDecomp_𝔘_maximal (t : Forest X n) (j : ℕ) :
     rowDecomp_𝔘 t j ⊆ s → s ⊆ rowDecomp_𝔘 t j :=
   fun _ => (rowDecomp_𝔘_def t j).le_of_ge
 
-lemma rowDecomp_𝔘_subset_tree (t : Forest X n) (j : ℕ) :
+lemma rowDecomp_𝔘_subset_forest (t : Forest X n) (j : ℕ) :
   rowDecomp_𝔘 t j ⊆ t := subset_trans (rowDecomp_𝔘_subset t j) diff_subset
 
 /-- The row-decomposition of a tree, defined in the proof of Lemma 7.7.1.
@@ -120,17 +120,20 @@ The indexing is off-by-one compared to the blueprint. -/
 def rowDecomp (t : Forest X n) (j : ℕ) : Row X n where
   𝔘 := rowDecomp_𝔘 t j
   𝔗 := t
-  nonempty' hu := t.nonempty (rowDecomp_𝔘_subset_tree t j hu)
-  ordConnected' hu:= t.ordConnected' (rowDecomp_𝔘_subset_tree t j hu)
-  𝓘_ne_𝓘' hu := t.𝓘_ne_𝓘' (rowDecomp_𝔘_subset_tree t j hu)
-  smul_four_le' hu := t.smul_four_le' (rowDecomp_𝔘_subset_tree t j hu)
+  nonempty' hu := t.nonempty (rowDecomp_𝔘_subset_forest t j hu)
+  ordConnected' hu:= t.ordConnected' (rowDecomp_𝔘_subset_forest t j hu)
+  𝓘_ne_𝓘' hu := t.𝓘_ne_𝓘' (rowDecomp_𝔘_subset_forest t j hu)
+  smul_four_le' hu := t.smul_four_le' (rowDecomp_𝔘_subset_forest t j hu)
   stackSize_le' := le_trans
-    (stackSize_mono (rowDecomp_𝔘_subset_tree t j))
+    (stackSize_mono (rowDecomp_𝔘_subset_forest t j))
     t.stackSize_le'
-  dens₁_𝔗_le' hu := t.dens₁_𝔗_le' (rowDecomp_𝔘_subset_tree t j hu)
-  lt_dist' hu hu' := t.lt_dist' (rowDecomp_𝔘_subset_tree t j hu) (rowDecomp_𝔘_subset_tree t j hu')
-  ball_subset' hu := t.ball_subset' (rowDecomp_𝔘_subset_tree t j hu)
+  dens₁_𝔗_le' hu := t.dens₁_𝔗_le' (rowDecomp_𝔘_subset_forest t j hu)
+  lt_dist' hu hu' := t.lt_dist' (rowDecomp_𝔘_subset_forest t j hu) (rowDecomp_𝔘_subset_forest t j hu')
+  ball_subset' hu := t.ball_subset' (rowDecomp_𝔘_subset_forest t j hu)
   pairwiseDisjoint' := rowDecomp_𝔘_pairwiseDisjoint t j
+
+lemma mem_forest_of_mem {t: Forest X n} {j : ℕ} {x : 𝔓 X} (hx : x ∈ t.rowDecomp j) : x ∈ t :=
+  rowDecomp_𝔘_subset_forest t j hx
 
 lemma rowDecomp_𝔘_eq (t : Forest X n) (j : ℕ) :
   (t.rowDecomp j).𝔘 = rowDecomp_𝔘 t j := rfl
@@ -183,18 +186,17 @@ lemma remainder_stackSize_le (t : Forest X n) (j : ℕ) :
         · rw [pairwiseDisjoint_insert]
           use t.rowDecomp_𝔘_pairwiseDisjoint j
           intro k hk hne
-          suffices 𝓘 u = 𝓘 k → u = k by
-            obtain (h|h|h) := le_or_ge_or_disjoint (i := 𝓘 u) (j := 𝓘 k)
-            case inr.inr => exact h
-            · have heq : 𝓘 u = 𝓘 k := by
-                apply le_antisymm h
-                exact hmax.le_of_ge ⟨k,rowDecomp_𝔘_subset t j hk,rfl⟩ h
-              exact (hne (this heq)).elim
-            · have heq : 𝓘 u = 𝓘 k := by
-                apply le_antisymm _ h
-                exact (mem_rowDecomp_𝔘_maximal t j k hk).le_of_ge ⟨u,hu,rfl⟩ h
-              exact (hne (this heq)).elim
-          sorry
+          have : 𝓘 u = 𝓘 k → u = k := by sorry
+          obtain (h|h|h) := le_or_ge_or_disjoint (i := 𝓘 u) (j := 𝓘 k)
+          case inr.inr => exact h
+          · have heq : 𝓘 u = 𝓘 k := by
+              apply le_antisymm h
+              exact hmax.le_of_ge ⟨k,rowDecomp_𝔘_subset t j hk,rfl⟩ h
+            exact (hne (this heq)).elim
+          · have heq : 𝓘 u = 𝓘 k := by
+              apply le_antisymm _ h
+              exact (mem_rowDecomp_𝔘_maximal t j k hk).le_of_ge ⟨u,hu,rfl⟩ h
+            exact (hne (this heq)).elim
         · exact ⟨hmax, mem_rowDecomp_𝔘_maximal t j⟩
       else
         dsimp [stackSize]
@@ -211,7 +213,7 @@ lemma remainder_stackSize_le (t : Forest X n) (j : ℕ) :
 lemma biUnion_rowDecomp : ⋃ j < 2 ^ n, t.rowDecomp j = (t : Set (𝔓 X)) := by
   apply subset_antisymm
   · simp_rw [iUnion_subset_iff,rowDecomp_𝔘_eq]
-    exact fun i _ => rowDecomp_𝔘_subset_tree t i
+    exact fun i _ => rowDecomp_𝔘_subset_forest t i
   · rw [← diff_eq_empty]
     exact eq_empty_of_forall_stackSize_zero _ fun x =>
       Nat.eq_zero_of_le_zero ((Nat.sub_self _).symm ▸ remainder_stackSize_le t (2 ^ n) x)
@@ -279,6 +281,42 @@ def rowSupport (j : ℕ) : Set X := ⋃ (u ∈ rowDecomp t j) (p ∈ t u), E p
 /-- Lemma 7.7.4 -/
 lemma pairwiseDisjoint_rowSupport :
     (Iio (2 ^ n)).PairwiseDisjoint (rowSupport t) := by
+  intro i hi j hj hne
+  rw [onFun_apply]
+  have rowDecomp_disjoint : Disjoint (α := Set (𝔓 X)) (t.rowDecomp i) (t.rowDecomp j) := by
+    exact (pairwiseDisjoint_rowDecomp (t := t) hi hj hne)
+  rw [Set.disjoint_iff]
+  simp_rw [rowSupport,iUnion_inter_iUnion]
+  intro x
+  simp only [mem_𝔗, mem_iUnion, mem_inter_iff, exists_and_left, exists_prop]
+  rintro ⟨u, u', hu', hu,p,hxp,p',hp',hp,hxp'⟩
+  wlog hsle : 𝔰 u ≤ 𝔰 u'
+  · exact this hj hi hne.symm rowDecomp_disjoint.symm u' u hu hu'
+      p' hxp' p hp hp' hxp (Int.le_of_not_le hsle)
+  simp only at hp hp'
+  have hu_ne: u ≠ u' := by
+    rintro rfl
+    rw [Set.disjoint_iff] at rowDecomp_disjoint
+    apply rowDecomp_disjoint
+    exact ⟨hu,hu'⟩
+  have : x ∈ (𝓘 u ∩ 𝓘 u' : Set X) :=
+    Set.inter_subset_inter
+      (subset_trans E_subset_𝓘
+        (if_descendant_then_subset t (rowDecomp_𝔘_subset_forest t i hu) hp))
+      (subset_trans E_subset_𝓘
+        (if_descendant_then_subset t (rowDecomp_𝔘_subset_forest t j hu') hp'))
+      ⟨hxp,hxp'⟩
+  have : (𝓘 u : Set X) ⊆ (𝓘 u') := by
+    apply (fundamental_dyadic hsle).elim id
+    exact fun d => (Set.Nonempty.not_disjoint (⟨x,this⟩ : Set.Nonempty _) d).elim
+  have : (𝓘 p : Set X) ⊆ 𝓘 u' := subset_trans (if_descendant_then_subset t
+    (rowDecomp_𝔘_subset_forest t i hu) hp) this
+  have : 2 ^ (Z * (n + 1)) < dist_(p) (𝒬 p) (𝒬 u') := by
+    apply lt_dist t (mem_forest_of_mem hu') (mem_forest_of_mem hu) hu_ne.symm
+      hp
+    use this
+    simp only [defaultA, defaultD.eq_1, defaultκ.eq_1]
+    sorry
   sorry
 
 end TileStructure.Forest
