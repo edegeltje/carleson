@@ -168,6 +168,9 @@ lemma remainder_stackSize_le (t : Forest X n) (j : ℕ) :
         rw [stackSize_sdiff_eq,← Nat.sub_sub]
         apply tsub_le_tsub hinduct (stackSize_remainder_ge_one_of_exists t j x _)
         rw [mem_diff] at h𝔲
+        apply (or_not).elim id
+        push_neg
+        intro h
         apply this.elim
         intro _ ⟨hmax,hz⟩
         obtain ⟨u,hu,rfl⟩ := hmax.prop
@@ -186,7 +189,11 @@ lemma remainder_stackSize_le (t : Forest X n) (j : ℕ) :
         · rw [pairwiseDisjoint_insert]
           use t.rowDecomp_𝔘_pairwiseDisjoint j
           intro k hk hne
-          have : 𝓘 u = 𝓘 k → u = k := by sorry
+          have : 𝓘 u = 𝓘 k → u = k := by
+            specialize h k hk
+            intro heq
+            rw [← heq] at h
+            contradiction
           obtain (h|h|h) := le_or_ge_or_disjoint (i := 𝓘 u) (j := 𝓘 k)
           case inr.inr => exact h
           · have heq : 𝓘 u = 𝓘 k := by
@@ -316,7 +323,10 @@ lemma pairwiseDisjoint_rowSupport :
       hp
     use this
     simp only [defaultA, defaultD.eq_1, defaultκ.eq_1]
-    sorry
+    apply le_trans _ hsle
+    -- TODO: Merge master/ use Forest.𝓘_le_𝓘
+    exact (t.smul_four_le (mem_forest_of_mem hu) hp).1.2
+
   sorry
 
 end TileStructure.Forest
