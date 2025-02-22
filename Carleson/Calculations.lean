@@ -172,7 +172,7 @@ lemma calculation_9 [PseudoMetricSpace X] [ProofData a q K σ₁ σ₂ F G]
   linarith
 
 
-lemma calculation_7_4_4 [PseudoMetricSpace X] [ProofData a q K σ₁ σ₂ F G] {n : ℕ}:
+lemma calculation_7_7_4 [PseudoMetricSpace X] [ProofData a q K σ₁ σ₂ F G] {n : ℕ}:
   (1:ℝ) ≤ 2 ^ (Z * (n + 1)) - 4 := by
   rw [le_sub_iff_add_le]
   trans 2 ^ 3

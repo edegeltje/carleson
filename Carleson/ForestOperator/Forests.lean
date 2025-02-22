@@ -335,7 +335,7 @@ lemma pairwiseDisjoint_rowSupport :
     rw [mem_ball (α := WithFunctionDistance (𝔠 p) (↑D ^ 𝔰 p / 4)),dist_comm]
     contrapose! this
     trans 1 ; exact this.le
-    exact calculation_7_4_4 (X := X)
+    exact calculation_7_7_4 (X := X)
   have : ¬(Ω p' ⊆ Ω p) := (fun hx => this <| subset_cball <| hx 𝒬_mem_Ω)
   exact Set.disjoint_iff.mp ((relative_fundamental_dyadic ‹𝓘 p ≤ 𝓘 p'›).resolve_right this)
     ⟨Q_mem_Ω hxp,Q_mem_Ω hxp'⟩
