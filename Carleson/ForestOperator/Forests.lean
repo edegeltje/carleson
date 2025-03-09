@@ -247,18 +247,133 @@ Has value `2 ^ (257 * a ^ 3 - n / 2)` in the blueprint. -/
 -- Todo: define this recursively in terms of previous constants
 irreducible_def C7_7_2_2 (a n : ℕ) : ℝ≥0 := 2 ^ (257 * (a : ℝ) ^ 3 - n / 2)
 
+lemma ENNReal.sq_le_mul_right {a : ℝ≥0∞} (htop : a ≠ ⊤) (b : ℝ≥0∞) : a ^ 2 ≤ b * a ↔ a ≤ b := by
+  if hzero : (a = 0) then
+    subst hzero
+    simp
+  else
+    rw [pow_two]
+    exact ENNReal.mul_le_mul_right hzero htop
+
+lemma sq_eLpNorm_carlesonSum_eq (hf : BoundedCompactSupport f) :
+    (eLpNorm (carlesonSum (t u) f) 2 volume) ^ 2 =
+      ‖∫ (x:X), conj (carlesonSum (t u) f x) * carlesonSum (t u) f x‖₊ := by
+  simp only [conj_mul', ← ofReal_pow, integral_complex_ofReal, nnnorm_real, ←
+    enorm_eq_nnnorm]
+  rw [(hf.carlesonSum.memLp 2).eLpNorm_eq_integral_rpow_norm (by positivity) (by norm_num)]
+  simp only [Real.norm_eq_abs, ENNReal.toReal_ofNat, Real.rpow_two]
+  rw [Real.enorm_eq_ofReal (by positivity), ← ENNReal.ofReal_pow (by positivity)]
+  nth_rw 2 [← Nat.cast_ofNat (n := 2)]
+  rw [Real.rpow_inv_natCast_pow (n := 2) (by positivity) (by positivity)]
+
+
+lemma carlesonSum_bounded (hu : u ∈ t) (hf : BoundedCompactSupport f) :
+  ∀ x, ‖carlesonSum (t u) f x‖ ≤ G.indicator 1 x := by
+  sorry
+#check IsBounded
+
+lemma refined_density_tree_bound1 (hu : u ∈ t) (hf : BoundedCompactSupport f) :
+    eLpNorm (carlesonSum (t u) f) 2 volume ≤
+      C7_3_1_1 a * dens₁ (t u) ^ (2 : ℝ)⁻¹ * eLpNorm f 2 volume := by
+  rw [← ENNReal.sq_le_mul_right (hf.carlesonSum.memLp 2).eLpNorm_ne_top]
+  apply hf.carlesonSum (ℭ := t u) |>.isBounded.exists_pos_norm_le.elim
+  -- there might be a better fitting lemma for the above.
+  intro C ⟨hCpos,hC⟩
+  simp only [gt_iff_lt] at hCpos
+  have _ : ‖ C⁻¹ ‖ₑ ^ 2 ≠ 0 := by
+    apply ENNReal.pow_ne_zero
+    apply enorm_ne_zero.mpr
+    apply inv_ne_zero
+    exact hCpos.ne.symm
+  have : ‖ C⁻¹ ‖ₑ ^ 2 ≠ ⊤ := by
+    rw [Real.enorm_eq_ofReal_abs]
+    exact ENNReal.pow_ne_top ENNReal.ofReal_ne_top
+  rw [← ENNReal.mul_le_mul_left ‹‖ C⁻¹ ‖ₑ ^ 2 ≠ 0› ‹‖ C⁻¹ ‖ₑ ^ 2 ≠ ⊤› ]
+  rw [← mul_pow, ← eLpNorm_const_smul,← carlesonSum_const_smul]
+  have : BoundedCompactSupport (C⁻¹ • f) := by
+    eta_expand
+    simp only [Pi.smul_apply, real_smul]
+    exact hf.const_mul _
+  rw [sq_eLpNorm_carlesonSum_eq this]
+  apply le_trans
+  · apply density_tree_bound1 this this.carlesonSum _ hu
+    rw [carlesonSum_const_smul]
+    simp only [mem_range, forall_exists_index, forall_apply_eq_imp_iff] at hC
+    intro x
+    rw [indicator_apply]
+    split
+    · rw [Pi.smul_apply,norm_smul,Real.norm_of_nonneg (inv_nonneg.mpr hCpos.le)]
+      rw [inv_mul_le_iff₀ (hCpos),Pi.one_apply,mul_one]
+      exact hC x
+    · suffices h: x ∉ Function.support (carlesonSum (t u) f) by
+        apply Eq.le
+        rw [norm_eq_zero,Pi.smul_apply]
+        simp only [real_smul, ofReal_inv, mul_eq_zero, inv_eq_zero, ofReal_eq_zero]
+        right
+        exact Function.nmem_support.mp h
+      sorry
+  apply Eq.le
+  simp_rw [carlesonSum_const_smul, eLpNorm_const_smul]
+  group
+
+lemma refined_density_tree_bound2 (hu : u ∈ t) (hf : BoundedCompactSupport f)
+    (hf2 : ∀ x, ‖f x‖ ≤ F.indicator 1 x) : eLpNorm (carlesonSum (t u) f) 2 volume ≤
+      ↑(C7_3_1_2 a) * dens₁ (t u) ^ (2 : ℝ)⁻¹ * dens₂ (t u) ^ (2 : ℝ)⁻¹ * eLpNorm f 2 volume := by
+  rw [← ENNReal.sq_le_mul_right (hf.carlesonSum.memLp 2).eLpNorm_ne_top]
+  rw [sq_eLpNorm_carlesonSum_eq hf]
+  exact density_tree_bound2 (g := carlesonSum (t u) f) hf hf2 (hf.carlesonSum)
+    (carlesonSum_bounded hu hf) hu
+
+lemma C7_7_2_bound1 (hu : u ∈ t) (hf : BoundedCompactSupport f) :
+    eLpNorm (carlesonSum (t u) f) 2 volume ≤
+      C7_3_1_1 a * 2 ^ ((4 * a + 1-n)/2 : ℝ) * eLpNorm f 2 volume := by
+  calc eLpNorm (carlesonSum ((fun x ↦ t.𝔗 x) u) f) 2 volume
+  _ ≤ C7_3_1_1 a * dens₁ (t u) ^ (2 : ℝ)⁻¹ * eLpNorm f 2 volume :=
+    refined_density_tree_bound1 hu hf
+  _ ≤ C7_3_1_1 a * 2 ^ ((4 * a + 1 - n) / 2 : ℝ) * eLpNorm f 2 volume := by
+    rw [div_eq_mul_inv _ (2:ℝ),ENNReal.rpow_mul]
+    gcongr
+    rw [add_sub_right_comm]
+    exact t.dens₁_𝔗_le hu
+
+lemma C7_7_2_bound2 (hu : u ∈ t) (hf : BoundedCompactSupport f) :
+    eLpNorm (carlesonSum (t u) (F.indicator f)) 2 volume ≤
+      C7_3_1_2 a * 2 ^ ((4 * a + 1-n)/2 : ℝ) * dens₂ (t u) ^ (2 : ℝ)⁻¹ * eLpNorm f 2 volume := by
+  calc eLpNorm (carlesonSum ((fun x ↦ t.𝔗 x) u) (F.indicator f)) 2 volume
+  _ ≤ C7_3_1_2 a * dens₁ (t u) ^ (2 : ℝ)⁻¹ * dens₂ (t u) ^ (2 : ℝ)⁻¹ * eLpNorm (F.indicator f) 2 volume := by
+    apply refined_density_tree_bound2 hu
+    · exact BoundedCompactSupport.indicator_of_isBounded_range hf.isBounded hf.stronglyMeasurable
+        isBounded_F measurableSet_F
+    · intro x
+      rw [Set.indicator_apply, Set.indicator_apply, apply_ite (‖·‖)]
+      split <;> simp
+      sorry
+  _ ≤ C7_3_1_2 a * 2 ^ ((4 * a + 1 - n) / 2 : ℝ) * dens₂ (t u) ^ (2 : ℝ)⁻¹ * eLpNorm f 2 volume := by
+    rw [div_eq_mul_inv _ (2:ℝ),ENNReal.rpow_mul]
+    gcongr
+    · rw [add_sub_right_comm]
+      exact t.dens₁_𝔗_le hu
+    · apply eLpNorm_mono
+      intro x
+      rw [Set.indicator_apply, apply_ite (‖·‖)]
+      split <;> simp
+
+
+
+
+
 /-- Part of Lemma 7.7.2. -/
-lemma row_bound (hj : j < 2 ^ n) (hg : BoundedCompactSupport f)
-    (h2f : ∀ x, ‖f x‖ ≤ G.indicator 1 x) :
-    eLpNorm (∑ u ∈ {p | p ∈ rowDecomp t j}, adjointCarlesonSum (t u) f) 2 volume ≤
-    C7_7_2_1 a n * eLpNorm f 2 volume := by
+lemma row_bound (hj : j < 2 ^ n) (hg : BoundedCompactSupport g)
+    (h2g : ∀ x, ‖g x‖ ≤ G.indicator 1 x) :
+    eLpNorm (∑ u ∈ {p | p ∈ rowDecomp t j}, adjointCarlesonSum (t u) g) 2 volume ≤
+    C7_7_2_1 a n * eLpNorm g 2 volume := by
   sorry
 
 /-- Part of Lemma 7.7.2. -/
-lemma indicator_row_bound (hj : j < 2 ^ n) (hf : BoundedCompactSupport f)
-    (h2f : ∀ x, ‖f x‖ ≤ G.indicator 1 x) :
-    eLpNorm (∑ u ∈ {p | p ∈ rowDecomp t j}, F.indicator <| adjointCarlesonSum (t u) f) 2 volume ≤
-    C7_7_2_2 a n * dens₂ (⋃ u ∈ t, t u) ^ (2 : ℝ)⁻¹ * eLpNorm f 2 volume := by
+lemma indicator_row_bound (hj : j < 2 ^ n) (hg : BoundedCompactSupport g)
+    (h2g : ∀ x, ‖g x‖ ≤ G.indicator 1 x) :
+    eLpNorm (∑ u ∈ {p | p ∈ rowDecomp t j}, F.indicator <| adjointCarlesonSum (t u) g) 2 volume ≤
+    C7_7_2_2 a n * dens₂ (⋃ u ∈ t, t u) ^ (2 : ℝ)⁻¹ * eLpNorm g 2 volume := by
   sorry
 
 /-- The constant used in `row_correlation`.

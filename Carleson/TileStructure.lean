@@ -133,6 +133,12 @@ lemma measurable_carlesonOn {p : 𝔓 X} {f : X → ℂ} (measf : Measurable f) 
     · exact measurable_dist.const_mul _
   · exact measf.comp measurable_snd
 
+lemma carlesonOn_const_smul (p : 𝔓 X) (f : X → ℂ) (c : ℝ):
+    carlesonOn p (c • f) = c • carlesonOn p f := by
+  dsimp only [carlesonOn, Pi.smul_apply]
+  simp_rw [mul_comm, smul_mul_assoc, integral_smul, indicator_const_smul]
+  rfl
+
 open Classical in
 /-- The operator `T_ℭ f` defined at the bottom of Section 7.4.
 We will use this in other places of the formalization as well. -/
@@ -287,6 +293,12 @@ lemma sum_carlesonSum_of_pairwiseDisjoint {ι : Type*} {f : X → ℂ} {x : X} {
       convert h hi hj hij
       · ext; simp
       · ext; simp
+
+lemma carlesonSum_const_smul {𝔖 : Set (𝔓 X)} {f : X → ℂ} (c : ℝ) : carlesonSum 𝔖 (c • f) = c • carlesonSum 𝔖 f := by
+  ext x
+  dsimp [carlesonSum]
+  simp_rw [carlesonOn_const_smul, Pi.smul_apply,← Finset.smul_sum]
+  rfl
 
 end T
 
