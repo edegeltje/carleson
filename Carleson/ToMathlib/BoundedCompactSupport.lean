@@ -13,6 +13,8 @@ import Mathlib.MeasureTheory.Measure.Haar.OfBasis
 import Mathlib.Topology.MetricSpace.Holder
 import Mathlib.Data.Set.Card
 import Mathlib.Data.Real.ENatENNReal
+-- import Mathlib.Analysis.NormedSpace.IndicatorFunction
+
 import Carleson.ToMathlib.Misc
 
 /-!
@@ -105,6 +107,21 @@ theorem indicator_of_isBounded_range {X : Type*} [MetricSpace X] [ProperSpace X]
     apply HasCompactSupport.intro (K := closure s)
     · exact Metric.isCompact_of_isClosed_isBounded isClosed_closure h's.closure
     · exact fun x hx ↦ by simp [not_mem_of_not_mem_closure hx]
+
+lemma indicator {X : Type*} [MetricSpace X] [ProperSpace X]
+    [MeasurableSpace X] [BorelSpace X] {f : X → 𝕜} (hf : BoundedCompactSupport f)
+    {s : Set X} (hs : MeasurableSet s) :
+    BoundedCompactSupport (s.indicator f) where
+  stronglyMeasurable := hf.stronglyMeasurable.indicator hs
+  isBounded := by
+    rcases isBounded_range_iff_forall_norm_le.1 hf.isBounded with ⟨C, hC⟩
+    apply isBounded_range_iff_forall_norm_le.2 ⟨C, fun x ↦ ?_⟩
+    exact le_trans (norm_indicator_le_norm_self _ _) (hC _)
+  hasCompactSupport := by
+    apply HasCompactSupport.intro (K := tsupport f)
+    · exact hf.hasCompactSupport
+    · exact fun x hx ↦ by simp only [indicator_apply_eq_zero, image_eq_zero_of_nmem_tsupport hx,
+      implies_true]
 
 variable {f : X → 𝕜} {g : X → 𝕜} (hf : BoundedCompactSupport f) (hg : BoundedCompactSupport g)
 section Includehf
