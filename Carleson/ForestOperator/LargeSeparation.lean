@@ -303,7 +303,7 @@ lemma quarter_add_two_mul_D_mul_card_le (hJ : J ∈ 𝓙₅ t u₁ u₂) :
       _ ≤ 2 ^ (200 * a ^ 3 + 7 * a) * volume (ball (c J') (18 / 128 * D ^ s J')) := by
         nth_rw 1 [show (18 : ℝ) * D ^ s J' = 2 ^ 7 * (18 / 128 * D ^ s J') by ring]
         rw [pow_add, mul_assoc]; gcongr
-        convert measure_ball_le_pow_two' (μ := volume) (x := c J') using 2
+        convert measure_ball_two_le_same_iterate (μ := volume) (c J') _ 7 using 2
         unfold defaultA; norm_cast; rw [← pow_mul']
       _ ≤ _ := by rw [div_eq_inv_mul _ 4]; gcongr; norm_num
   replace dbl : V.card * volume (ball (c J) (9 * D ^ (s J + 1))) ≤
@@ -557,7 +557,7 @@ lemma integrable_adjointCarleson_interior (hf : BoundedCompactSupport f) :
     obtain ⟨C, nnC, hC⟩ := IsBounded.exists_bound_of_norm_Ks bep (𝔰 p)
     apply Measure.integrableOn_of_bounded (M := C) volume_E_lt_top.ne ?_ ?_
     · exact continuous_conj.comp_aestronglyMeasurable
-        (measurable_Ks.comp measurable_prod_mk_right).aestronglyMeasurable
+        (measurable_Ks.comp measurable_prodMk_right).aestronglyMeasurable
     · simp only [RCLike.norm_conj]
       exact ae_restrict_of_forall_mem measurableSet_E fun y my ↦ hC y x my
   · refine ((Measurable.const_mul ?_ I).cexp.mul
@@ -565,7 +565,7 @@ lemma integrable_adjointCarleson_interior (hf : BoundedCompactSupport f) :
     refine (measurable_ofReal.comp ?_).sub (measurable_ofReal.comp ?_)
     · have pair : Measurable fun y : X ↦ (y, y) := by fun_prop
       exact measurable_Q₂.comp pair
-    · exact measurable_Q₂.comp measurable_prod_mk_right
+    · exact measurable_Q₂.comp measurable_prodMk_right
   · rw [norm_mul, ← one_mul B]
     refine mul_le_mul ?_ (hB y) (norm_nonneg _) zero_le_one
     rw_mod_cast [mul_comm, norm_exp_ofReal_mul_I]
@@ -621,7 +621,7 @@ lemma holder_correlation_rearrange (hf : BoundedCompactSupport f) :
       simp_rw [mul_add]; apply lintegral_add_right
       apply hf.stronglyMeasurable.measurable.enorm.mul (Measurable.enorm (Measurable.sub ?_ ?_)) <;>
         exact (continuous_conj.comp_stronglyMeasurable
-          (measurable_Ks.comp measurable_prod_mk_right).stronglyMeasurable).measurable
+          (measurable_Ks.comp measurable_prodMk_right).stronglyMeasurable).measurable
     _ ≤ (∫⁻ y in E p, ‖f y‖ₑ * ‖conj (Ks (𝔰 p) y x)‖ₑ * ‖- Q y x + Q y x' + 𝒬 u x - 𝒬 u x'‖ₑ) +
         ∫⁻ y in E p, ‖f y‖ₑ * ‖conj (Ks (𝔰 p) y x) - conj (Ks (𝔰 p) y x')‖ₑ := by
       simp_rw [mul_assoc]; gcongr with y; rw [enorm_mul]; gcongr
@@ -1026,7 +1026,7 @@ lemma local_tree_control_sup_bound {k : ℤ} (mk : k ∈ Finset.Icc (s J) (s J +
           _ < 16 * D ^ (𝔰 p) + (8⁻¹ + 8) * D ^ (𝔰 p) + 4 * D ^ (𝔰 p) := by
             gcongr; rw [dist_comm, ← mem_ball]; exact Grid_subset_ball mx.1
           _ ≤ _ := by rw [← add_mul, ← add_mul]; gcongr; norm_num
-      have dbl := measure_ball_le_pow_two' (μ := volume) (x := x) (r := D ^ 𝔰 p) (n := 5)
+      have dbl := measure_ball_two_le_same_iterate (μ := volume) x (D ^ 𝔰 p) 5
       simp_rw [show (2 : ℝ) ^ 5 = 32 by norm_num, defaultA, ← ENNReal.coe_pow,
         Nat.cast_pow, Nat.cast_ofNat, ← pow_mul', ENNReal.coe_pow, ENNReal.coe_ofNat] at dbl
       exact ENNReal.div_le_of_le_mul' ((measure_mono inc).trans dbl)

@@ -892,8 +892,7 @@ theorem forest_operator' {n : ℕ} (𝔉 : Forest X n) {f : X → ℂ} {A : Set 
     fun_prop
   · apply h'A.subset support_indicator_subset
   gcongr
-  · have := (q_mem_Ioc (X := X)).2
-    simp only [sub_nonneg, ge_iff_le, inv_le_inv₀ zero_lt_two (q_pos X)]
+  · simp only [sub_nonneg, ge_iff_le, inv_le_inv₀ zero_lt_two (q_pos X)]
     exact (q_mem_Ioc (X := X)).2
   · exact le_rfl
   calc

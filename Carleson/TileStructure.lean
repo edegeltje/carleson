@@ -105,7 +105,7 @@ lemma measurableSet_E {p : 𝔓 X} : MeasurableSet (E p) := by
   · apply (measurable_set_mem _).comp
     apply Measurable.comp (f := fun x ↦ (σ₁ x, σ₂ x)) (g := fun p ↦ Icc p.1 p.2)
     · exact measurable_from_prod_countable fun _ _ _ ↦ trivial
-    · exact measurable_σ₁.prod_mk measurable_σ₂
+    · exact measurable_σ₁.prodMk measurable_σ₂
 
 lemma volume_E_lt_top : volume (E p) < ⊤ := trans (measure_mono E_subset_𝓘) volume_coeGrid_lt_top
 
@@ -357,6 +357,12 @@ instance : PartialOrder (𝔓 X) := PartialOrder.lift toTileLike toTileLike_inje
 lemma 𝔓.le_def {p q : 𝔓 X} : p ≤ q ↔ toTileLike p ≤ toTileLike q := by rfl
 lemma 𝔓.le_def' {p q : 𝔓 X} : p ≤ q ↔ 𝓘 p ≤ 𝓘 q ∧ Ω q ⊆ Ω p := by rfl
 
+/-- Deduce an inclusion of tiles from an inclusion of their cubes and
+non-disjointness of their `Ω`s. -/
+lemma tile_le_of_cube_le_and_not_disjoint {p q : 𝔓 X} (hi : 𝓘 p ≤ 𝓘 q)
+    {x : Θ X} (mxp : x ∈ Ω p) (mxq : x ∈ Ω q) : p ≤ q :=
+  ⟨hi, (relative_fundamental_dyadic hi).resolve_left (not_disjoint_iff.mpr ⟨x, mxp, mxq⟩)⟩
+
 lemma dist_𝒬_lt_one_of_le {p q : 𝔓 X} (h : p ≤ q) : dist_(p) (𝒬 q) (𝒬 p) < 1 :=
   ((cball_subset.trans h.2).trans subset_cball) (mem_ball_self (by norm_num))
 
@@ -465,12 +471,28 @@ lemma E₂_subset (l : ℝ) (p : 𝔓 X) : E₂ l p ⊆ 𝓘 p := by
   rw [inter_assoc]
   exact inter_subset_left
 
-/-! `𝔓(𝔓')` in the blueprint is `lowerClosure 𝔓'` in Lean. -/
+lemma E₂_mono {p : 𝔓 X} : Monotone fun l ↦ E₂ l p := fun l l' hl ↦ by
+  simp_rw [E₂, TileLike.toSet, inter_assoc]
+  refine inter_subset_inter_right _ (inter_subset_inter_right _ (preimage_mono ?_))
+  rw [smul_snd]; exact ball_subset_ball hl
+
+/-- `𝔓(𝔓')` in the blueprint.
+The set of all tiles whose cubes are less than the cube of some tile in the given set. -/
+def lowerCubes (𝔓' : Set (𝔓 X)) : Set (𝔓 X) :=
+  {p | ∃ p' ∈ 𝔓', 𝓘 p ≤ 𝓘 p'}
+
+lemma mem_lowerCubes {𝔓' : Set (𝔓 X)} : p ∈ lowerCubes 𝔓' ↔ ∃ p' ∈ 𝔓', 𝓘 p ≤ 𝓘 p' := by rfl
+
+lemma lowerCubes_mono : Monotone (lowerCubes (X := X)) := fun 𝔓₁ 𝔓₂ hs p mp ↦ by
+  rw [lowerCubes, mem_setOf] at mp ⊢; obtain ⟨p', mp', hp'⟩ := mp; use p', hs mp'
+
+lemma subset_lowerCubes {𝔓' : Set (𝔓 X)} : 𝔓' ⊆ lowerCubes 𝔓' := fun p mp ↦ by
+  rw [lowerCubes, mem_setOf]; use p
 
 /-- This density is defined to live in `ℝ≥0∞`. Use `ENNReal.toReal` to get a real number. -/
 def dens₁ (𝔓' : Set (𝔓 X)) : ℝ≥0∞ :=
   ⨆ (p' ∈ 𝔓') (l ≥ (2 : ℝ≥0)), l ^ (-a : ℝ) *
-  ⨆ (p ∈ lowerClosure 𝔓') (_h2 : smul l p' ≤ smul l p),
+  ⨆ (p ∈ lowerCubes 𝔓') (_h2 : smul l p' ≤ smul l p),
   volume (E₂ l p) / volume (𝓘 p : Set X)
 
 lemma dens₁_mono {𝔓₁ 𝔓₂ : Set (𝔓 X)} (h : 𝔓₁ ⊆ 𝔓₂) :
@@ -485,7 +507,7 @@ lemma dens₁_mono {𝔓₁ 𝔓₂ : Set (𝔓 X)} (h : 𝔓₁ ⊆ 𝔓₂) :
   · refine le_iSup₂_of_le r hr ?_
     rw [mul_comm]
     gcongr
-    exact le_iSup₂_of_le q (lowerClosure_mono h hq) (le_iSup_iff.mpr fun b a ↦ a hqr)
+    exact le_iSup₂_of_le q (lowerCubes_mono h hq) (le_iSup_iff.mpr fun b a ↦ a hqr)
   · left
     have hr0 : r ≠ 0 := by positivity
     simp [hr0]
@@ -494,6 +516,10 @@ lemma dens₁_mono {𝔓₁ 𝔓₂ : Set (𝔓 X)} (h : 𝔓₁ ⊆ 𝔓₂) :
 def dens₂ (𝔓' : Set (𝔓 X)) : ℝ≥0∞ :=
   ⨆ (p ∈ 𝔓') (r ≥ 4 * (D ^ 𝔰 p : ℝ)),
   volume (F ∩ ball (𝔠 p) r) / volume (ball (𝔠 p) r)
+
+lemma le_dens₂ (𝔓' : Set (𝔓 X)) {p : 𝔓 X} (hp : p ∈ 𝔓') {r : ℝ} (hr : r ≥ 4 * (D ^ 𝔰 p : ℝ)) :
+    volume (F ∩ ball (𝔠 p) r) / volume (ball (𝔠 p) r) ≤ dens₂ 𝔓' :=
+  le_trans (le_iSup₂ (α := ℝ≥0∞) r hr) (le_iSup₂ p hp)
 
 lemma dens₂_eq_biSup_dens₂ (𝔓' : Set (𝔓 X)) :
     dens₂ (𝔓') = ⨆ (p ∈ 𝔓'), dens₂ ({p}) := by
@@ -513,7 +539,7 @@ lemma ENNReal.rpow_le_rpow_of_nonpos {x y : ℝ≥0∞} {z : ℝ} (hz : z ≤ 0)
 /- A rough estimate. It's also less than 2 ^ (-a) -/
 def dens₁_le_one {𝔓' : Set (𝔓 X)} : dens₁ 𝔓' ≤ 1 := by
   conv_rhs => rw [← mul_one 1]
-  simp only [dens₁, mem_lowerClosure, iSup_exists, iSup_le_iff]
+  simp only [dens₁, mem_lowerCubes, iSup_exists, iSup_le_iff]
   intros i _ j hj
   gcongr
   · calc
@@ -531,6 +557,17 @@ def dens₁_le_one {𝔓' : Set (𝔓 X)} : dens₁ 𝔓' ≤ 1 := by
     gcongr
     apply E₂_subset
   _ ≤ 1 := ENNReal.div_self_le_one
+
+lemma volume_E₂_le_dens₁_mul_volume {𝔓' : Set (𝔓 X)} (mp : p ∈ lowerCubes 𝔓') (mp' : p' ∈ 𝔓')
+    {l : ℝ≥0} (hl : 2 ≤ l) (sp : smul l p' ≤ smul l p) :
+    volume (E₂ l p) ≤ l ^ a * dens₁ 𝔓' * volume (𝓘 p : Set X) := by
+  have vpos : volume (𝓘 p : Set X) ≠ 0 := (volume_coeGrid_pos (defaultD_pos' a)).ne'
+  rw [← ENNReal.div_le_iff_le_mul (.inl vpos) (.inl volume_coeGrid_lt_top.ne),
+    ← ENNReal.rpow_natCast, ← neg_neg (a : ℝ), ENNReal.rpow_neg, ← ENNReal.div_eq_inv_mul]
+  have plt : (l : ℝ≥0∞) ^ (-(a : ℝ)) ≠ ⊤ := by aesop
+  rw [ENNReal.le_div_iff_mul_le (by simp) (.inl plt), mul_comm, dens₁]
+  refine le_iSup₂_of_le p' mp' (le_iSup₂_of_le l hl ?_); gcongr
+  exact le_iSup₂_of_le p mp (le_iSup_of_le sp le_rfl)
 
 /-! ### Stack sizes -/
 
